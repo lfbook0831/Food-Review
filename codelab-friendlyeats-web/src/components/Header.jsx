@@ -1,76 +1,50 @@
-'use client'
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import {
-	signInWithGoogle,
-	signOut,
-	onAuthStateChanged
-} from "@/src/lib/firebase/auth.js";
-import { addFakeRestaurantsAndReviews } from "@/src/lib/firebase/firestore.js";
+'use client';
+
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { firebaseConfig } from "@/src/lib/firebase/config";
+import { onAuthStateChanged, signInWithGoogle, signOut } from "../lib/firebase/auth";
 
-function useUserSession(initialUser) {
-	return;
-}
+const Header = () => {
+  const [user, setUser] = useState(null);
+  const router = useRouter();
 
-export default function Header({initialUser}) {
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged((authUser) => {
+      setUser(authUser);
+    });
 
-	const user = useUserSession(initialUser) ;
+    return () => unsubscribe();
+  }, []);
 
-	const handleSignOut = event => {
-		event.preventDefault();
-		signOut();
-	};
+  const handleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      console.error("Sign-in failed:", error);
+    }
+  };
 
-	const handleSignIn = event => {
-		event.preventDefault();
-		signInWithGoogle();
-	};
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Sign-out failed:", error);
+    }
+  };
 
-	return (
-		<header>
-			<Link href="/" className="logo">
-				<img src="/friendly-eats.svg" alt="FriendlyEats" />
-				Friendly Eats
-			</Link>
-			{user ? (
-				<>
-					<div className="profile">
-						<p>
-							<img className="profileImage" src={user.photoURL || "/profile.svg"} alt={user.email} />
-							{user.displayName}
-						</p>
+  return (
+    <header>
+      <h1>Food Review App</h1>
+      {user ? (
+        <>
+          <p>Welcome, {user.displayName}</p>
+          <button onClick={handleSignOut}>Sign Out</button>
+        </>
+      ) : (
+        <button onClick={handleSignIn}>Sign In with Google</button>
+      )}
+    </header>
+  );
+};
 
-						<div className="menu">
-							...
-							<ul>
-								<li>{user.displayName}</li>
-
-								<li>
-									<a
-										href="#"
-										onClick={addFakeRestaurantsAndReviews}
-									>
-										Add sample restaurants
-									</a>
-								</li>
-
-								<li>
-									<a href="#" onClick={handleSignOut}>
-										Sign Out
-									</a>
-								</li>
-							</ul>
-						</div>
-					</div>
-				</>
-			) : (
-				<div className="profile"><a href="#" onClick={handleSignIn}>
-					<img src="/profile.svg" alt="A placeholder user image" />
-					Sign In with Google
-				</a></div>
-			)}
-		</header>
-	);
-}
+export default Header;
